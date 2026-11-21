@@ -1,16 +1,19 @@
+from app.config import TOPICS
+
+_TOPICS_LIST = ", ".join(f'"{t}"' for t in TOPICS)
+
 SUMMARIZE_PROMPT = (
     "Your job is to transform a video/podcast (lecture, interview, or discussion) "
     "into an objective, dense, structured report so that the reader gets all the key "
     "information, nuances, and knowledge without having to watch the original video.\n\n"
 
-    "OUTPUT FORMAT (STRICT):\n"
-    "1. Line 1 MUST be a valid, single-line JSON object (do NOT wrap in markdown code blocks like ```json) with two keys:\n"
-    "   - \"title\": A concise, high-signal, objective title capturing the primary subject and key speakers "
+    "OUTPUT SCHEMA FIELDS:\n"
+    "- \"title\": A concise, high-signal, objective title capturing the primary subject and key speakers "
     "(replace clickbait, hype, and ALL CAPS with clean, professional titling).\n"
-    "   - \"topics\": A list of 1 to 2 broad topic tags (e.g. [\"Artificial Intelligence\", \"Software Engineering\"] "
-    "or [\"Investing & Finance\"]).\n"
-    "   Example line 1: {\"title\": \"Andrej Karpathy on Code Agents, AutoResearch, and Modern AI Engineering\", \"topics\": [\"Artificial Intelligence\", \"Software Engineering\"]}\n\n"
-    "2. Starting from line 3, write the full structured markdown report. "
+    f"- \"topics\": A list of 1 to 2 tags chosen ONLY from this exact list: [{_TOPICS_LIST}]. "
+    "Put the primary lens first and an optional secondary tag second (e.g. [\"AI\", \"Engineering & Tech\"] "
+    "or [\"Business & Finance\", \"AI\"]). Use \"General\" only if nothing else fits.\n"
+    "- \"summary\": The full structured markdown report. "
     "Do NOT repeat the title as an # H1 heading. Start directly with a short intro (2-4 sentences) — "
     "what this is, who is speaking, and what it covers overall. "
     "Then organize the rest into clear, readable sections with descriptive headers.\n\n"
@@ -24,4 +27,5 @@ SUMMARIZE_PROMPT = (
     "- Condense the information to about 30%-60% of the original length, depending on density.\n"
     "- Use the speaker's own terms, phrasing, and technical vocabulary where possible."
 )
+
 

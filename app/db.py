@@ -44,19 +44,6 @@ def save_summary(url: str, title: str, summary: str, topics: list = None) -> int
     return cursor.lastrowid
 
 
-def update_summary_topics(id: int, topics: list) -> bool:
-    conn = get_connection()
-    topics_json = json.dumps(topics or [])
-    cursor = conn.execute(
-        "UPDATE summaries SET topics = ? WHERE id = ?",
-        (topics_json, id),
-    )
-    conn.commit()
-    updated = cursor.rowcount > 0
-    conn.close()
-    return updated
-
-
 def list_summaries():
     conn = get_connection()
     rows = conn.execute(

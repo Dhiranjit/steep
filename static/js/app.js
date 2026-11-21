@@ -127,9 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderAllNotesView();
       } else if (selectedId) {
         selectNote(selectedId);
-      } else if (notes.length > 0 && !currentNote && !isStreaming) {
-        // Auto select first note on initial load
-        selectNote(notes[0].id);
       }
     } catch (err) {
       console.error('Error loading notes:', err);

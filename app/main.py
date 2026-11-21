@@ -11,35 +11,14 @@ from fastapi.staticfiles import StaticFiles
 
 from app.services.transcript import get_transcript, get_video_data, sanitize_url
 from app.services.llm import LLMClient
-from app.db import init_db, save_summary, list_summaries, get_summary, delete_summary, update_summary_topics, get_connection
+from app.db import init_db, save_summary, list_summaries, get_summary, delete_summary
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
-
-
-async def backfill_topics_if_needed():
-    try:
-        conn = get_connection()
-        rows = conn.execute("SELECT id, title, summary, topics FROM summaries").fetchall()
-        conn.close()
-        for row in rows:
-            topics = []
-            try:
-                topics = json.loads(row["topics"] or "[]")
-            except Exception:
-                pass
-            if not topics:
-                extracted = await llm_client.extract_topics(row["title"], row["summary"][:1200])
-                if extracted:
-                    update_summary_topics(row["id"], extracted)
-                    print(f"Backfilled topics for #{row['id']} '{row['title']}': {extracted}")
-    except Exception as e:
-        print(f"Error during topic backfill: {e}")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
-    asyncio.create_task(backfill_topics_if_needed())
     async with httpx.AsyncClient() as client:
         app.state.http_client = client
         yield
@@ -80,42 +59,15 @@ background_tasks = set()
 
 
 async def generate_and_save(url: str, text: str, original_title: str, description: str, channel: str, queue: asyncio.Queue):
-    chunks = []
     try:
-        async for chunk in llm_client.summarize(text, original_title, description, channel):
-            chunks.append(chunk)
-            await queue.put(chunk)
-
-        full_output = "".join(chunks)
-        ai_title = original_title
-        topics = ["General"]
-        summary_markdown = full_output
-
-        # Extract Line 1 JSON metadata (AI title & topics)
-        lines = full_output.split("\n", 1)
-        if lines:
-            first_line = lines[0].strip()
-            if first_line.startswith("```json"):
-                first_line = first_line[7:].strip()
-            if first_line.startswith("```"):
-                first_line = first_line[3:].strip()
-            if first_line.endswith("```"):
-                first_line = first_line[:-3].strip()
-            try:
-                meta = json.loads(first_line)
-                if isinstance(meta, dict):
-                    if meta.get("title"):
-                        ai_title = meta["title"].strip()
-                    if meta.get("topics") and isinstance(meta["topics"], list):
-                        topics = [str(t).strip() for t in meta["topics"] if str(t).strip()]
-                if len(lines) > 1:
-                    summary_markdown = lines[1].strip()
-            except Exception as e:
-                print(f"Failed to parse line 1 metadata: {e}")
-
-        save_summary(url, ai_title, summary_markdown, topics)
+        async for event in llm_client.summarize(text, original_title, description, channel):
+            if event["type"] == "done":
+                result = event["data"]
+                save_summary(url, result.title, result.summary, result.topics)
+            else:
+                await queue.put(json.dumps(event) + "\n")
     except Exception as e:
-        await queue.put(f"\n\n**Error during summarization:** {e}")
+        await queue.put(json.dumps({"type": "error", "message": str(e)}) + "\n")
     finally:
         await queue.put(None)
 
@@ -149,19 +101,13 @@ async def summarize(url: str):
                 break
             yield chunk
 
-    return StreamingResponse(stream(), media_type="text/plain")
+    return StreamingResponse(stream(), media_type="application/x-ndjson")
 
 
 
 @app.get("/summaries")
 def get_summaries():
     return list_summaries()
-
-
-@app.post("/summaries/backfill-topics")
-async def trigger_backfill():
-    asyncio.create_task(backfill_topics_if_needed())
-    return {"status": "started"}
 
 
 @app.get("/summaries/{id}")
@@ -180,6 +126,11 @@ def delete_summary_by_id(id: int):
     return {"status": "deleted", "id": id}
 
 
+@app.get("/favicon.ico")
+def serve_favicon():
+    return FileResponse(STATIC_DIR / "favicon.svg", media_type="image/svg+xml")
+
+
 @app.get("/")
 def serve_index():
     index_file = STATIC_DIR / "index.html"
@@ -191,4 +142,3 @@ def serve_index():
 # Mount static assets
 if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
-

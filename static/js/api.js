@@ -37,8 +37,7 @@ const SteepAPI = {
   },
 
   /**
-   * Streams a summary response from the server.
-   * Expects the first line to be JSON { "title": "..." }, followed by markdown chunks.
+   * Streams NDJSON summary events from the server ({type: "meta" | "chunk" | "error"}).
    */
   async streamSummarize(url, { onTitle, onChunk, onFinish, onError }) {
     try {
@@ -58,48 +57,37 @@ const SteepAPI = {
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder('utf-8');
-
       let buffer = '';
-      let isFirstLine = true;
+
+      const handleLine = (line) => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+        const event = JSON.parse(trimmed);
+        if (event.type === 'meta' && onTitle) {
+          onTitle(event.title, event.topics);
+        } else if (event.type === 'chunk' && onChunk) {
+          onChunk(event.delta);
+        } else if (event.type === 'error') {
+          throw new Error(event.message || 'An error occurred while generating the summary.');
+        }
+      };
 
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
 
-        if (isFirstLine) {
-          const newlineIndex = buffer.indexOf('\n');
-          if (newlineIndex !== -1) {
-            const firstLine = buffer.slice(0, newlineIndex).trim();
-            buffer = buffer.slice(newlineIndex + 1);
-
-            try {
-              let clean = firstLine;
-              if (clean.startsWith('```json')) clean = clean.slice(7).trim();
-              if (clean.startsWith('```')) clean = clean.slice(3).trim();
-              if (clean.endsWith('```')) clean = clean.slice(0, -3).trim();
-              const parsed = JSON.parse(clean);
-              if (parsed.title && onTitle) {
-                onTitle(parsed.title, parsed.topics);
-              }
-            } catch (e) {
-              // If not JSON, treat line as standard content
-              buffer = firstLine + '\n' + buffer;
-            }
-
-            isFirstLine = false;
-          }
-        }
-
-        if (!isFirstLine && buffer) {
-          if (onChunk) onChunk(buffer);
-          buffer = '';
+        for (const line of lines) {
+          handleLine(line);
         }
       }
 
-      if (buffer && onChunk) {
-        onChunk(buffer);
+      buffer += decoder.decode();
+      if (buffer.trim()) {
+        handleLine(buffer);
       }
 
       if (onFinish) onFinish();
