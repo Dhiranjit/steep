@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Steep: AI Video & Podcast Summaries</title>
+
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Modular Styles -->
+  <link rel="stylesheet" href="/static/css/style.css?v=2.5">
+  <link rel="stylesheet" href="/static/css/markdown.css?v=2.5">
+</head>
+
+<body>
+  <div class="app-container">
+    <!-- Left Sidebar: Saved Notes -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="#" class="brand-logo" id="brandBtn">
+          <div class="brand-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+              <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+              <line x1="6" y1="1" x2="6" y2="4"></line>
+              <line x1="10" y1="1" x2="10" y2="4"></line>
+              <line x1="14" y1="1" x2="14" y2="4"></line>
+            </svg>
+          </div>
+          <span class="brand-title">Steep <span class="brand-badge">AI</span></span>
+        </a>
+        <button class="btn-new" id="btnNewNote" title="Start a new summary">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          New
+        </button>
+      </div>
+
+      <!-- Search in notes -->
+      <div class="sidebar-search">
+        <div class="search-input-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" class="search-input" id="searchNotesInput" placeholder="Search saved notes...">
+        </div>
+      </div>
+
+      <!-- Navigation: All Notes Hub -->
+      <div class="sidebar-nav">
+        <button class="nav-item-btn" id="btnViewAllNotes" title="Browse all notes grouped by topic">
+          <div class="nav-item-content">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            <span>All Notes</span>
+          </div>
+          <span class="nav-badge" id="navAllNotesCount">0</span>
+        </button>
+      </div>
+
+      <!-- Notes Count Header -->
+      <div class="notes-list-header">
+        <span>Recent Notes</span>
+      </div>
+
+      <!-- Notes list container -->
+      <div class="notes-list" id="notesListContainer"></div>
+    </aside>
+
+
+    <!-- Main Content Area -->
+    <main class="main-area">
+      <!-- Top Action Bar (Mobile Menu) -->
+      <header class="top-bar" id="topBar">
+        <button class="mobile-menu-btn" id="mobileMenuToggle" aria-label="Toggle sidebar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        <span class="mobile-brand">Steep <span class="brand-badge">AI</span></span>
+      </header>
+
+      <!-- Alert / Error message banner -->
+      <div class="alert-banner" id="alertBanner">
+        <span id="alertMessage">An error occurred</span>
+        <button class="alert-close" id="alertClose">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Content Scrollable Viewport -->
+      <div class="content-viewport" id="viewport">
+        <div class="content-container">
+
+          <!-- Welcome View -->
+          <div class="welcome-card" id="welcomeView">
+            <div class="welcome-icon-wrap">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+            </div>
+            <h2 class="welcome-title">High-Signal Video Notes</h2>
+            <p class="welcome-desc">
+              Paste a link below to extract the transcript and generate a dense, structured summary preserving numbers, facts, and nuanced takeaways.
+            </p>
+
+            <!-- Centered Summarize Input Form -->
+            <form class="url-form welcome-url-form" id="summarizeForm">
+              <div class="url-input-container">
+                <svg class="url-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                </svg>
+                <input 
+                  type="url" 
+                  class="url-input" 
+                  id="urlInput" 
+                  placeholder="Paste YouTube video or podcast link (e.g. https://www.youtube.com/watch?v=...)" 
+                  required
+                  autocomplete="off"
+                >
+              </div>
+              <button type="submit" class="btn-submit" id="btnSubmit">
+                <svg id="submitIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+                <span id="submitText">Summarize</span>
+              </button>
+            </form>
+
+            <div class="welcome-features">
+              <div class="feature-item">
+                <h4>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-light)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  Dense Detail
+                </h4>
+                <p>Retains names, arguments, statistics, and stories without generic fluff.</p>
+              </div>
+              <div class="feature-item">
+                <h4>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-light)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  Realtime Streaming
+                </h4>
+                <p>Watch the structured report generate live as the LLM processes it.</p>
+              </div>
+              <div class="feature-item">
+                <h4>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-light)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  Local History
+                </h4>
+                <p>All summaries are automatically saved into SQLite for instant offline retrieval.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Note Article View -->
+          <article class="note-article" id="noteArticle">
+            <header class="article-header">
+              <h1 class="article-title" id="articleTitle">Video Title</h1>
+              <div class="article-meta-row">
+                <div class="article-meta-left">
+                  <span id="articleDate" class="note-date">Saved</span>
+                  <div class="streaming-status" id="streamingIndicator" style="display: none;">
+                    <div class="pulse-dot"></div>
+                    <span>Streaming summary...</span>
+                  </div>
+                </div>
+                <div class="article-meta-right">
+                  <a href="#" target="_blank" rel="noopener noreferrer" class="btn-action" id="articleVideoLink">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                      <polyline points="15 3 21 3 21 9"></polyline>
+                      <line x1="10" y1="14" x2="21" y2="3"></line>
+                    </svg>
+                    Original Video
+                  </a>
+                  <button class="btn-action" id="btnCopyMarkdown" title="Copy Raw Markdown">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    Copy Markdown
+                  </button>
+                  <button class="btn-action btn-action-danger" id="btnDeleteCurrentNote" title="Delete Note">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    Delete Note
+                  </button>
+                </div>
+              </div>
+            </header>
+
+            <!-- Rendered Markdown Container -->
+            <div class="markdown-body" id="markdownContent"></div>
+          </article>
+
+          <!-- All Notes Library View -->
+          <section class="all-notes-view" id="allNotesView" style="display: none;">
+            <header class="library-header">
+              <div class="library-header-main">
+                <div class="library-title-group">
+                  <div class="library-badge-row">
+                    <span class="library-kicker">Library</span>
+                    <span class="library-notes-count" id="libraryTotalCount">0 notes</span>
+                  </div>
+                  <h1 class="library-title">All Saved Notes</h1>
+                  <p class="library-desc">Browse summaries or explore them grouped by topic.</p>
+                </div>
+
+                <div class="library-controls">
+                  <!-- View layout toggle -->
+                  <div class="view-toggle" role="group" aria-label="View layout">
+                    <button class="toggle-btn active" id="toggleGroupedView" title="Group by Topic">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="8" y1="6" x2="21" y2="6"></line>
+                        <line x1="8" y1="12" x2="21" y2="12"></line>
+                        <line x1="8" y1="18" x2="21" y2="18"></line>
+                        <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                        <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                        <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                      </svg>
+                      Grouped
+                    </button>
+                    <button class="toggle-btn" id="toggleGridView" title="Show all notes in a grid">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                      </svg>
+                      All
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Topic Filter Pills Bar -->
+              <div class="topic-pills-bar" id="topicPillsContainer">
+                <!-- Injected via JS -->
+              </div>
+            </header>
+
+            <!-- Container for Topic Groups or Grid -->
+            <div class="library-content" id="libraryContent"></div>
+          </section>
+
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="20 6 9 17 4 12"></polyline>
+    </svg>
+    <span id="toastMsg">Markdown copied to clipboard!</span>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/lib/marked.umd.min.js"></script>
+  <script src="/static/js/markdown.js?v=2.5"></script>
+  <script src="/static/js/api.js?v=2.5"></script>
+  <script src="/static/js/app.js?v=2.5"></script>
+</body>
+</html>
+
+

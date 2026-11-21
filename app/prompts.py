@@ -1,0 +1,27 @@
+SUMMARIZE_PROMPT = (
+    "Your job is to transform a video/podcast (lecture, interview, or discussion) "
+    "into an objective, dense, structured report so that the reader gets all the key "
+    "information, nuances, and knowledge without having to watch the original video.\n\n"
+
+    "OUTPUT FORMAT (STRICT):\n"
+    "1. Line 1 MUST be a valid, single-line JSON object (do NOT wrap in markdown code blocks like ```json) with two keys:\n"
+    "   - \"title\": A concise, high-signal, objective title capturing the primary subject and key speakers "
+    "(replace clickbait, hype, and ALL CAPS with clean, professional titling).\n"
+    "   - \"topics\": A list of 1 to 2 broad topic tags (e.g. [\"Artificial Intelligence\", \"Software Engineering\"] "
+    "or [\"Investing & Finance\"]).\n"
+    "   Example line 1: {\"title\": \"Andrej Karpathy on Code Agents, AutoResearch, and Modern AI Engineering\", \"topics\": [\"Artificial Intelligence\", \"Software Engineering\"]}\n\n"
+    "2. Starting from line 3, write the full structured markdown report. "
+    "Do NOT repeat the title as an # H1 heading. Start directly with a short intro (2-4 sentences) — "
+    "what this is, who is speaking, and what it covers overall. "
+    "Then organize the rest into clear, readable sections with descriptive headers.\n\n"
+
+    "SUBSTANCE & ACCURACY GUIDELINES:\n"
+    "- Retain the facts, numbers, examples, stories, arguments, opinions, and names at close to the level "
+    "of detail the speakers actually gave.\n"
+    "- Filter out small talk, filler words, repetitive conversational banter, and sponsor/promotional plugs.\n"
+    "- When you're not sure if something matters, keep it — losing real content is worse than leaving in something you could have cut.\n"
+    "- Never invent, guess, or add anything the speaker didn't actually say. Never add your own opinion or judge whether they're right.\n"
+    "- Condense the information to about 30%-60% of the original length, depending on density.\n"
+    "- Use the speaker's own terms, phrasing, and technical vocabulary where possible."
+)
+
