@@ -87,8 +87,82 @@ function fallbackMarkdownParse(text) {
   return html;
 }
 
+function timestampToSeconds(ts) {
+  const parts = ts.split(':').map(Number);
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  return 0;
+}
+
+/**
+ * Replaces [MM:SS] / [H:MM:SS] (and [MM:SS - MM:SS]) timestamps in rendered text nodes
+ * with clickable YouTube links jumping directly to that timestamp.
+ */
+function linkifyTimestampsInElement(container, videoUrl) {
+  if (!container || !videoUrl) return;
+
+  let baseUrl;
+  try {
+    baseUrl = new URL(videoUrl);
+  } catch (_) {
+    return;
+  }
+
+  const tsRegex = /\[(\d{1,2}:\d{2}(?::\d{2})?)(?:\s*[-–—]\s*(\d{1,2}:\d{2}(?::\d{2})?))?\]/g;
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+  const textNodes = [];
+
+  let node;
+  while ((node = walker.nextNode())) {
+    if (!node.nodeValue || !node.nodeValue.includes(':')) continue;
+    if (node.parentElement && node.parentElement.closest('a, code, pre')) continue;
+    textNodes.push(node);
+  }
+
+  textNodes.forEach((textNode) => {
+    const text = textNode.nodeValue;
+    tsRegex.lastIndex = 0;
+    if (!tsRegex.test(text)) return;
+
+    tsRegex.lastIndex = 0;
+    const frag = document.createDocumentFragment();
+    let lastIndex = 0;
+    let match;
+
+    while ((match = tsRegex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        frag.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+      }
+
+      const startTs = match[1];
+      const endTs = match[2];
+      const seconds = timestampToSeconds(startTs);
+      const linkUrl = new URL(baseUrl.href);
+      linkUrl.searchParams.set('t', `${seconds}s`);
+
+      const link = document.createElement('a');
+      link.className = 'timestamp-link';
+      link.href = linkUrl.href;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.title = `Watch from ${startTs} on YouTube`;
+      link.textContent = endTs ? `${startTs}–${endTs}` : startTs;
+      frag.appendChild(link);
+
+      lastIndex = tsRegex.lastIndex;
+    }
+
+    if (lastIndex < text.length) {
+      frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+    }
+
+    textNode.parentNode.replaceChild(frag, textNode);
+  });
+}
+
 window.SteepMarkdown = {
   renderMarkdownToHtml,
   escapeHtml,
+  linkifyTimestampsInElement,
 };
 

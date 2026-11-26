@@ -9,9 +9,22 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.services.transcript import get_transcript, get_video_data, sanitize_url
+from app.services.transcript import (
+    extract_video_id,
+    get_transcript,
+    get_video_data,
+    sanitize_url,
+)
 from app.services.llm import LLMClient
-from app.db import init_db, save_summary, list_summaries, get_summary, delete_summary
+from app.db import (
+    delete_summary,
+    get_summary,
+    get_summary_by_video_id,
+    init_db,
+    list_summaries,
+    save_summary,
+    update_summary,
+)
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
@@ -58,12 +71,54 @@ def transcript(url: str):
 background_tasks = set()
 
 
-async def generate_and_save(url: str, text: str, original_title: str, description: str, channel: str, queue: asyncio.Queue):
+async def generate_and_save(
+    video_info: dict,
+    queue: asyncio.Queue,
+    existing_id: int | None = None,
+):
     try:
-        async for event in llm_client.summarize(text, original_title, description, channel):
+        await queue.put(
+            json.dumps({
+                "type": "video_meta",
+                "video_id": video_info["video_id"],
+                "url": video_info["url"],
+                "channel": video_info.get("channel", ""),
+                "duration": video_info.get("duration", 0),
+            })
+            + "\n"
+        )
+        async for event in llm_client.summarize(
+            video_info["transcript"],
+            video_info["title"],
+            video_info.get("description", ""),
+            video_info.get("channel", ""),
+        ):
             if event["type"] == "done":
                 result = event["data"]
-                save_summary(url, result.title, result.summary, result.topics)
+                if existing_id is not None:
+                    saved = update_summary(existing_id, result.title, result.summary, result.topics)
+                else:
+                    saved = save_summary(
+                        video_id=video_info["video_id"],
+                        url=video_info["url"],
+                        title=result.title,
+                        summary=result.summary,
+                        topics=result.topics,
+                        transcript=video_info["transcript"],
+                        original_title=video_info["title"],
+                        channel=video_info.get("channel", ""),
+                        description=video_info.get("description", ""),
+                        duration=video_info.get("duration", 0),
+                    )
+                if saved:
+                    await queue.put(
+                        json.dumps({
+                            "type": "saved",
+                            "id": saved["id"],
+                            "reading_time": saved["reading_time"],
+                        })
+                        + "\n"
+                    )
             else:
                 await queue.put(json.dumps(event) + "\n")
     except Exception as e:
@@ -72,25 +127,9 @@ async def generate_and_save(url: str, text: str, original_title: str, descriptio
         await queue.put(None)
 
 
-@app.get("/summarize")
-async def summarize(url: str):
-    try:
-        clean_url = sanitize_url(url)
-        video_info = get_video_data(clean_url)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    
+def _stream_queue_response(video_info: dict, existing_id: int | None = None) -> StreamingResponse:
     queue = asyncio.Queue()
-    task = asyncio.create_task(
-        generate_and_save(
-            clean_url,
-            video_info["transcript"],
-            video_info["title"],
-            video_info.get("description", ""),
-            video_info.get("channel", ""),
-            queue,
-        )
-    )
+    task = asyncio.create_task(generate_and_save(video_info, queue, existing_id=existing_id))
     background_tasks.add(task)
     task.add_done_callback(background_tasks.discard)
 
@@ -102,6 +141,49 @@ async def summarize(url: str):
             yield chunk
 
     return StreamingResponse(stream(), media_type="application/x-ndjson")
+
+
+@app.get("/summarize")
+async def summarize(url: str):
+    try:
+        video_id = extract_video_id(url)
+        clean_url = sanitize_url(url)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    existing = get_summary_by_video_id(video_id)
+    if existing:
+        async def duplicate_stream():
+            yield json.dumps({"type": "duplicate", "id": existing["id"], "title": existing["title"]}) + "\n"
+
+        return StreamingResponse(duplicate_stream(), media_type="application/x-ndjson")
+
+    try:
+        video_info = get_video_data(clean_url)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    return _stream_queue_response(video_info)
+
+
+@app.post("/summaries/{id}/regenerate")
+async def regenerate_summary(id: int):
+    existing = get_summary(id)
+    if not existing:
+        raise HTTPException(status_code=404, detail="Summary not found")
+    if not existing.get("transcript"):
+        raise HTTPException(status_code=400, detail="No saved transcript available to regenerate")
+
+    video_info = {
+        "video_id": existing["video_id"],
+        "url": existing["url"],
+        "transcript": existing["transcript"],
+        "title": existing.get("original_title") or existing["title"],
+        "description": existing.get("description", ""),
+        "channel": existing.get("channel", ""),
+        "duration": existing.get("duration", 0),
+    }
+    return _stream_queue_response(video_info, existing_id=id)
 
 
 

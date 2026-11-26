@@ -12,8 +12,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
   <!-- Modular Styles -->
-  <link rel="stylesheet" href="/static/css/style.css?v=2.5">
-  <link rel="stylesheet" href="/static/css/markdown.css?v=2.5">
+  <link rel="stylesheet" href="/static/css/style.css?v=2.6">
+  <link rel="stylesheet" href="/static/css/markdown.css?v=2.6">
 </head>
 
 <body>
@@ -178,10 +178,13 @@
               <h1 class="article-title" id="articleTitle">Video Title</h1>
               <div class="article-meta-row">
                 <div class="article-meta-left">
+                  <button type="button" id="articleChannel" class="article-channel-btn" style="display: none;" title="View all notes from this channel"></button>
                   <span id="articleDate" class="note-date">Saved</span>
+                  <span id="articleDuration" class="article-meta-chip" style="display: none;"></span>
+                  <span id="articleReadingTime" class="article-meta-chip" style="display: none;"></span>
                   <div class="streaming-status" id="streamingIndicator" style="display: none;">
                     <div class="pulse-dot"></div>
-                    <span>Streaming summary...</span>
+                    <span id="streamingStatusText">Streaming summary...</span>
                   </div>
                 </div>
                 <div class="article-meta-right">
@@ -193,6 +196,14 @@
                     </svg>
                     Original Video
                   </a>
+                  <button class="btn-action" id="btnRegenerateNote" title="Regenerate summary from saved transcript">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="23 4 23 10 17 10"></polyline>
+                      <polyline points="1 20 1 14 7 14"></polyline>
+                      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    </svg>
+                    Regenerate
+                  </button>
                   <button class="btn-action" id="btnCopyMarkdown" title="Copy Raw Markdown">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -225,13 +236,13 @@
                     <span class="library-notes-count" id="libraryTotalCount">0 notes</span>
                   </div>
                   <h1 class="library-title">All Saved Notes</h1>
-                  <p class="library-desc">Browse summaries or explore them grouped by topic.</p>
+                  <p class="library-desc">Browse summaries grouped by topic or channel.</p>
                 </div>
 
                 <div class="library-controls">
                   <!-- View layout toggle -->
                   <div class="view-toggle" role="group" aria-label="View layout">
-                    <button class="toggle-btn active" id="toggleGroupedView" title="Group by Topic">
+                    <button class="toggle-btn active" id="toggleTopicView" title="Group by Topic">
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="8" y1="6" x2="21" y2="6"></line>
                         <line x1="8" y1="12" x2="21" y2="12"></line>
@@ -240,7 +251,14 @@
                         <line x1="3" y1="12" x2="3.01" y2="12"></line>
                         <line x1="3" y1="18" x2="3.01" y2="18"></line>
                       </svg>
-                      Grouped
+                      Topics
+                    </button>
+                    <button class="toggle-btn" id="toggleChannelView" title="Group by Channel">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect>
+                        <polyline points="17 2 12 7 7 2"></polyline>
+                      </svg>
+                      Channels
                     </button>
                     <button class="toggle-btn" id="toggleGridView" title="Show all notes in a grid">
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -281,9 +299,9 @@
 
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/lib/marked.umd.min.js"></script>
-  <script src="/static/js/markdown.js?v=2.5"></script>
-  <script src="/static/js/api.js?v=2.5"></script>
-  <script src="/static/js/app.js?v=2.5"></script>
+  <script src="/static/js/markdown.js?v=2.6"></script>
+  <script src="/static/js/api.js?v=2.6"></script>
+  <script src="/static/js/app.js?v=2.6"></script>
 </body>
 </html>
 

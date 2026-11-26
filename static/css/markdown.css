@@ -146,6 +146,29 @@
   color: #a5b4fc;
 }
 
+.markdown-body a.timestamp-link {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-light);
+  background: rgba(99, 102, 241, 0.14);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 5px;
+  padding: 1px 6px;
+  text-decoration: none;
+  line-height: 1.4;
+  vertical-align: 1px;
+  transition: all 0.15s ease;
+}
+
+.markdown-body a.timestamp-link:hover {
+  background: rgba(99, 102, 241, 0.28);
+  border-color: var(--accent-light);
+  color: #ffffff;
+}
+
 /* Streaming Cursor */
 .streaming-cursor {
   display: inline-block;
